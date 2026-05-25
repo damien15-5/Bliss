@@ -68,6 +68,28 @@
     class="w-full h-12 rounded-2xl bg-black/40 border border-white/10 px-4 outline-none mb-4"
   />
 
+  <div class="grid md:grid-cols-2 gap-4 mb-4">
+
+    <label class="glass rounded-3xl p-6 text-center cursor-pointer hover:bg-white/10 transition block">
+      <div class="text-4xl mb-3">🖼️</div>
+      <h4 class="font-semibold text-lg">Upload Lecture Image</h4>
+      <p class="text-sm text-gray-400 mt-2">Upload screenshots, whiteboards, or notes.</p>
+      <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="previewImage(event)" />
+    </label>
+
+    <label class="glass rounded-3xl p-6 text-center cursor-pointer hover:bg-white/10 transition block">
+      <div class="text-4xl mb-3">📄</div>
+      <h4 class="font-semibold text-lg">Upload PDF</h4>
+      <p class="text-sm text-gray-400 mt-2">Import lecture slides and study materials.</p>
+      <input type="file" accept="application/pdf" class="hidden" />
+    </label>
+
+  </div>
+
+  <div id="imagePreviewContainer" class="hidden mb-4">
+    <img id="imagePreview" class="w-full max-h-[260px] object-cover rounded-3xl border border-white/10" />
+  </div>
+
   <textarea
     id="lectureInput"
     placeholder="Paste lecture notes or transcript here..."
@@ -210,6 +232,21 @@
           </div>
         `;
       }, 1500);
+    }
+
+    function previewImage(event) {
+      const file = event.target.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+          document.getElementById('imagePreview').src = e.target.result;
+          document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        };
+
+        reader.readAsDataURL(file);
+      }
     }
 
     function downloadSummary() {
