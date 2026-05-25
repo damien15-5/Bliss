@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LectureAI — AI Lecture Summarizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #0a0a0a;
+      --gray-900: #111;
+      --gray-600: #555;
+      --gray-400: #999;
+      --gray-200: #e8e8e8;
+      --gray-100: #f4f4f4;
+      --white: #ffffff;
+      --accent: #1a1a1a;
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 28px;
+      --shadow: 0 2px 16px rgba(0,0,0,0.07);
+      --shadow-hover: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--white);
+      color: var(--black);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      letter-spacing: -0.3px;
+      color: var(--black);
+    }
+    .nav-brand p {
+      font-size: 12px;
+      color: var(--gray-400);
+      font-weight: 300;
+      letter-spacing: 0.5px;
+    }
+    .btn-primary {
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 32px 60px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding: 48px 24px 40px; gap: 40px; }
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-600);
+      letter-spacing: 0.3px;
+      margin-bottom: 28px;
+    }
+    .hero-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--black); display: block; }
+    .hero h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(40px, 5vw, 60px);
+      line-height: 1.1;
+      letter-spacing: -1px;
+      color: var(--black);
+      margin-bottom: 20px;
+    }
+    .hero h2 em {
+      font-style: italic;
+      color: var(--gray-400);
+    }
+    .hero p {
+      font-size: 16px;
+      color: var(--gray-600);
+      font-weight: 300;
+      max-width: 440px;
+      line-height: 1.75;
+      margin-bottom: 36px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--black);
+      border: 1px solid var(--gray-200);
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-secondary:hover { background: var(--gray-100); border-color: var(--gray-400); }
+
+    /* ── WORKSPACE CARD ── */
+    .workspace-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .card-header h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: var(--black);
+    }
+    .card-header p { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .card-icon { font-size: 20px; opacity: 0.6; }
+
+    input[type="text"], textarea {
+      width: 100%;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--black);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"] { height: 48px; margin-bottom: 12px; }
+    input[type="text"]:focus, textarea:focus { border-color: var(--black); }
+    textarea { min-height: 200px; resize: vertical; line-height: 1.6; }
+
+    .word-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+    .word-row button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      color: var(--gray-400);
+      transition: color 0.2s;
+    }
+    .word-row button:hover { color: var(--black); }
+
+    .btn-generate {
+      width: 100%;
+      margin-top: 20px;
+      height: 48px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-generate:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-generate:active { transform: translateY(0); }
+
+    /* ── OUTPUT SECTION ── */
+    .output-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px 64px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .output-section { grid-template-columns: 1fr; padding: 0 24px 48px; }
+    }
+
+    .output-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+    .output-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .output-card-header h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      color: var(--black);
+    }
+    .output-card-header p { font-size: 12px; color: var(--gray-400); margin-top: 3px; }
+
+    .btn-export {
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-export:hover { opacity: 0.8; }
+
+    #summaryBox {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      min-height: 220px;
+      color: var(--gray-400);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    #summaryBox.has-content {
+      align-items: flex-start;
+      text-align: left;
+      color: var(--black);
+    }
+    #summaryBox h4 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: var(--black);
+    }
+    #summaryBox p { font-size: 14px; color: var(--gray-600); line-height: 1.8; }
+
+    /* Flashcards */
+    .study-badge {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--gray-600);
+      letter-spacing: 0.5px;
+    }
+    #flashcards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--gray-400);
+      font-size: 14px;
+    }
+    .flashcard {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: default;
+    }
+    .flashcard:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    .flashcard h4 { font-size: 13px; font-weight: 600; color: var(--black); margin-bottom: 6px; }
+    .flashcard p { font-size: 13px; color: var(--gray-600); line-height: 1.5; }
+
+    /* ── FEATURES ── */
+    .features {
+      background: var(--gray-100);
+      border-top: 1px solid var(--gray-200);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 80px 32px;
+    }
+    .features-inner { max-width: 1200px; margin: 0 auto; }
+    .features-header { text-align: center; margin-bottom: 56px; }
+    .features-header h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 4vw, 48px);
+      color: var(--black);
+      margin-bottom: 12px;
+    }
+    .features-header p { color: var(--gray-600); font-weight: 300; font-size: 16px; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 1000px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+
+    .feature-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); }
+    .feature-icon { font-size: 28px; margin-bottom: 16px; display: block; }
+    .feature-card h3 { font-size: 16px; font-weight: 600; color: var(--black); margin-bottom: 8px; }
+    .feature-card p { font-size: 13px; color: var(--gray-600); line-height: 1.6; font-weight: 300; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 32px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--gray-400);
+      font-weight: 300;
+    }
+
+    /* ── LOADING STATE ── */
+    @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    .loading-text { animation: pulse 1.5s ease-in-out infinite; color: var(--gray-600); }
+
+    /* ── DIVIDER ── */
+    .section-divider { max-width: 1200px; margin: 0 auto 0; padding: 0 32px; }
+    hr { border: none; border-top: 1px solid var(--gray-200); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <h1>LectureAI</h1>
+        <p>AI Lecture Summarizer</p>
+      </div>
+      <button class="btn-primary">Get Started</button>
+    </div>
+  </nav>
+
+  <!-- HERO + WORKSPACE -->
+  <section class="hero">
+    <!-- Left: Copy -->
+    <div>
+      <div class="hero-badge">Smart AI Learning Platform</div>
+      <h2>Turn Lectures Into <em>Smart Notes</em></h2>
+      <p>Upload lecture notes, PDFs, or audio recordings and generate AI-powered summaries, flashcards, and study materials instantly.</p>
+      <div class="hero-actions">
+        <button class="btn-primary">Start Learning</button>
+        <button class="btn-secondary">Watch Demo</button>
+      </div>
+    </div>
+
+    <!-- Right: Workspace -->
+    <div class="workspace-card">
+      <div class="card-header">
+        <div>
+          <h3>Lecture Workspace</h3>
+          <p>Paste your lecture content below</p>
+        </div>
+        <span class="card-icon">✦</span>
+      </div>
+
+      <input id="title" type="text" placeholder="Lecture title" />
+
+      <textarea
+        id="lectureInput"
+        placeholder="Paste lecture notes or transcript here..."
+      ></textarea>
+
+      <div class="word-row">
+        <span id="wordCount">0 words</span>
+        <button onclick="loadExample()">Load example →</button>
+      </div>
+
+      <button class="btn-generate" onclick="generateSummary()">
+        Generate AI Summary
+      </button>
+    </div>
+  </section>
+
+  <!-- OUTPUT -->
+  <section class="output-section">
+    <!-- Summary -->
+    <div class="output-card">
+      <div class="output-card-header">
+        <div>
+          <h3>Generated Summary</h3>
+          <p>AI lecture overview</p>
+        </div>
+        <button class="btn-export" onclick="downloadSummary()">Export PDF</button>
+      </div>
+      <div id="summaryBox">Your generated lecture summary will appear here.</div>
+    </div>
+
+    <!-- Flashcards -->
+    <div class="output-card">
+      <div class="output-card-header">
+        <div>
+          <h3>Flashcards</h3>
+          <p>Quick revision mode</p>
+        </div>
+        <span class="study-badge">Study</span>
+      </div>
+      <div id="flashcards">Flashcards will appear after generating summary.</div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="features-inner">
+      <div class="features-header">
+        <h2>Everything for Smarter Learning</h2>
+        <p>All the tools you need — in one place.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-icon">🧠</span>
+          <h3>AI Summaries</h3>
+          <p>Generate concise, accurate lecture summaries in seconds.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🎧</span>
+          <h3>Audio Upload</h3>
+          <p>Upload lecture recordings and get instant transcriptions.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">📄</span>
+          <h3>PDF Support</h3>
+          <p>Import lecture slides and documents effortlessly.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">📚</span>
+          <h3>Flashcards</h3>
+          <p>Auto-generated study cards for fast, effective revision.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    © 2026 LectureAI. All rights reserved.
+  </footer>
+
+  <script>
+    const lectureInput = document.getElementById('lectureInput');
+    const wordCount = document.getElementById('wordCount');
+
+    lectureInput.addEventListener('input', () => {
+      const words = lectureInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+      wordCount.textContent = words.length + ' words';
+    });
+
+    function loadExample() {
+      lectureInput.value = 'Artificial Intelligence refers to systems that simulate human intelligence. Machine learning is a subset of AI where systems learn from data. Neural networks mimic the structure of the human brain and are used in deep learning. AI is applied in healthcare, finance, robotics, education, and cybersecurity.';
+      const words = lectureInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+      wordCount.textContent = words.length + ' words';
+    }
+
+    function generateSummary() {
+      const title = document.getElementById('title').value.trim() || 'Untitled Lecture';
+      const content = lectureInput.value.trim();
+      const summaryBox = document.getElementById('summaryBox');
+      const flashcardsEl = document.getElementById('flashcards');
+
+      if (!content) {
+        summaryBox.className = '';
+        summaryBox.innerHTML = '<span style="color:#c00;font-size:14px;">Please paste some lecture content first.</span>';
+        return;
+      }
+
+      summaryBox.className = '';
+      summaryBox.innerHTML = '<span class="loading-text">Generating summary…</span>';
+      flashcardsEl.innerHTML = '<span class="loading-text">Preparing flashcards…</span>';
+
+      setTimeout(() => {
+        summaryBox.className = 'has-content';
+        summaryBox.innerHTML = `
+          <div>
+            <h4>${title}</h4>
+            <p>This lecture focused on Artificial Intelligence and its major concepts. It covered machine learning — a data-driven subset of AI — and neural networks, which draw inspiration from the human brain for use in deep learning. Practical applications across healthcare, finance, robotics, and education were also explored.</p>
+          </div>`;
+
+        flashcardsEl.innerHTML = `
+          <div class="flashcard">
+            <h4>Q: What is Artificial Intelligence?</h4>
+            <p>A: Systems designed to simulate human intelligence and decision-making.</p>
+          </div>
+          <div class="flashcard">
+            <h4>Q: What is machine learning?</h4>
+            <p>A: A subset of AI where systems learn patterns and improve from data.</p>
+          </div>
+          <div class="flashcard">
+            <h4>Q: What are neural networks?</h4>
+            <p>A: Brain-inspired computational structures used in deep learning models.</p>
+          </div>`;
+      }, 1400);
+    }
+
+    function downloadSummary() {
+      window.print();
+    }
+  </script>
+</body>
+</html>
